@@ -26,7 +26,7 @@ Create Table LA_Crime
             Location VARCHAR(40)
 		);
  
- -- Loading our cleaned, la_crime data from excel into our table
+ -- Loading our cleaned into la_crime table data from csv
 SET GLOBAL local_infile = 'ON';
 LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/Crime_Data_Cleaned_Table.csv' INTO TABLE LA_CRIME
 FIELDS TERMINATED BY ','  -- delimiter
@@ -44,7 +44,7 @@ SELECT Victim_Sex, Crime,
 	COUNT(*) AS Gender_case_count,  
     -- Counting number of crimes based on reported sex
 	SUM(COUNT(*)) OVER (PARTITION BY CRIME) AS Total_crime_type_count,
-    -- Summing number of crimes across genders to achieve total crime
+    -- Summing number of crimes across reported genders to achieve total crime
 	ROUND
 		(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY Crime), 2)
         AS Percentage_of_crime_type 
