@@ -8,193 +8,76 @@ https://data.lacity.org/Public-Safety/Crime-Data-from-2020-to-Present/2nrs-mtv8/
 This project is designed to demonstrate SQL skills and techniques typically used by data analysts to explore and analyze crime data.
 
 Project Structure
-1. Database Setup
+1. Database and Table Setup
 
 ```sql
-CREATE DATABASE p1_retail_db;
-
-CREATE TABLE retail_sales
-(
-    transactions_id INT PRIMARY KEY,
-    sale_date DATE,	
-    sale_time TIME,
-    customer_id INT,	
-    gender VARCHAR(10),
-    age INT,
-    category VARCHAR(35),
-    quantity INT,
-    price_per_unit FLOAT,	
-    cogs FLOAT,
-    total_sale FLOAT
-);
+-- Create Database
+DROP DATABASE IF EXISTS sql_la_crime_p1;
+CREATE DATABASE sql_la_crime_p1;
+USE sql_la_crime_p1;
 ```
-2. Data Exploration & Cleaning
 
-    Record Count: Determine the total number of records in the dataset.
-    Customer Count: Find out how many unique customers are in the dataset.
-    Category Count: Identify all unique product categories in the dataset.
-    Null Value Check: Check for any null values in the dataset and delete records with missing data.
+```sql
+-- Create Table
+DROP TABLE IF EXISTS LA_CRIME;
+Create Table LA_Crime
+		(
+            DR_NO INT PRIMARY KEY,
+            Date_Reported DATE,
+            Date_Occurred DATE,
+            Time_Occurred TIME,
+            Area VARCHAR(15),
+            Crime VARCHAR(70),
+            Victim_Age INT,
+            Victim_Sex VARCHAR(1),
+            Victim_Descent VARCHAR(1),
+            Premise_Description VARCHAR(80),
+            Status_Description VARCHAR(15),
+            Location VARCHAR(40)
+		);
+ ```
 
-SELECT COUNT(*) FROM retail_sales;
-SELECT COUNT(DISTINCT customer_id) FROM retail_sales;
-SELECT DISTINCT category FROM retail_sales;
+2. Loading in our cleaned data from csv
+```sql
+ -- Loading our cleaned, la_crime data from excel into our table
+SET GLOBAL local_infile = 'ON';
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/Crime_Data_Cleaned_Table.csv' INTO TABLE LA_CRIME
+FIELDS TERMINATED BY ','  -- delimiter
+IGNORE 1 LINES;  -- Ignoring the header row of csv file
+```
 
-SELECT * FROM retail_sales
-WHERE 
-    sale_date IS NULL OR sale_time IS NULL OR customer_id IS NULL OR 
-    gender IS NULL OR age IS NULL OR category IS NULL OR 
-    quantity IS NULL OR price_per_unit IS NULL OR cogs IS NULL;
+3. Writing queries to analyze data
 
-DELETE FROM retail_sales
-WHERE 
-    sale_date IS NULL OR sale_time IS NULL OR customer_id IS NULL OR 
-    gender IS NULL OR age IS NULL OR category IS NULL OR 
-    quantity IS NULL OR price_per_unit IS NULL OR cogs IS NULL;
+```sql
+-- A Simple query displaying the amount of robberies in specific areas of LA
+SELECT Area, Crime, COUNT(*) AS Count  -- Counting the number of rows for each column
+FROM LA_crime                          -- Specifying the table
+WHERE Crime = 'ROBBERY'                -- Specifying the type of crime
+GROUP BY Area                          -- Displaying the crime count by area
+ORDER BY Count DESC;
+```
 
-3. Data Analysis & Findings
-
-The following SQL queries were developed to answer specific business questions:
-
-    Write a SQL query to retrieve all columns for sales made on '2022-11-05:
-
-SELECT *
-FROM retail_sales
-WHERE sale_date = '2022-11-05';
-
-    Write a SQL query to retrieve all transactions where the category is 'Clothing' and the quantity sold is more than 4 in the month of Nov-2022:
-
-SELECT 
-  *
-FROM retail_sales
-WHERE 
-    category = 'Clothing'
-    AND 
-    TO_CHAR(sale_date, 'YYYY-MM') = '2022-11'
-    AND
-    quantity >= 4
-
-    Write a SQL query to calculate the total sales (total_sale) for each category.:
-
-SELECT 
-    category,
-    SUM(total_sale) as net_sale,
-    COUNT(*) as total_orders
-FROM retail_sales
-GROUP BY 1
-
-    Write a SQL query to find the average age of customers who purchased items from the 'Beauty' category.:
-
-SELECT
-    ROUND(AVG(age), 2) as avg_age
-FROM retail_sales
-WHERE category = 'Beauty'
-
-    Write a SQL query to find all transactions where the total_sale is greater than 1000.:
-
-SELECT * FROM retail_sales
-WHERE total_sale > 1000
-
-    Write a SQL query to find the total number of transactions (transaction_id) made by each gender in each category.:
-
-SELECT 
-    category,
-    gender,
-    COUNT(*) as total_trans
-FROM retail_sales
-GROUP 
-    BY 
-    category,
-    gender
-ORDER BY 1
-
-    Write a SQL query to calculate the average sale for each month. Find out best selling month in each year:
-
-SELECT 
-       year,
-       month,
-    avg_sale
-FROM 
-(    
-SELECT 
-    EXTRACT(YEAR FROM sale_date) as year,
-    EXTRACT(MONTH FROM sale_date) as month,
-    AVG(total_sale) as avg_sale,
-    RANK() OVER(PARTITION BY EXTRACT(YEAR FROM sale_date) ORDER BY AVG(total_sale) DESC) as rank
-FROM retail_sales
-GROUP BY 1, 2
-) as t1
-WHERE rank = 1
-
-    **Write a SQL query to find the top 5 customers based on the highest total sales **:
-
-SELECT 
-    customer_id,
-    SUM(total_sale) as total_sales
-FROM retail_sales
-GROUP BY 1
-ORDER BY 2 DESC
-LIMIT 5
-
-    Write a SQL query to find the number of unique customers who purchased items from each category.:
-
-SELECT 
-    category,    
-    COUNT(DISTINCT customer_id) as cnt_unique_cs
-FROM retail_sales
-GROUP BY category
-
-    Write a SQL query to create each shift and number of orders (Example Morning <12, Afternoon Between 12 & 17, Evening >17):
-
-WITH hourly_sale
-AS
-(
-SELECT *,
-    CASE
-        WHEN EXTRACT(HOUR FROM sale_time) < 12 THEN 'Morning'
-        WHEN EXTRACT(HOUR FROM sale_time) BETWEEN 12 AND 17 THEN 'Afternoon'
-        ELSE 'Evening'
-    END as shift
-FROM retail_sales
-)
-SELECT 
-    shift,
-    COUNT(*) as total_orders    
-FROM hourly_sale
-GROUP BY shift
+```sql
+-- A query showing the proportion of crimes committed aginst reported genders
+SELECT Victim_Sex, Crime,
+	COUNT(*) AS Gender_case_count,  
+    -- Counting number of crimes based on reported sex
+	SUM(COUNT(*)) OVER (PARTITION BY CRIME) AS Total_crime_type_count,
+    -- Summing number of crimes across genders to achieve total crime
+	ROUND
+		(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY Crime), 2)
+        AS Percentage_of_crime_type 
+        -- Essentiallty dividing Gender_case_count by Total_crime_type_count
+        -- to achieve desired proportion
+FROM LA_crime
+GROUP BY Victim_Sex, Crime;
+```
 
 Findings
-
-    Customer Demographics: The dataset includes customers from various age groups, with sales distributed across different categories such as Clothing and Beauty.
-    High-Value Transactions: Several transactions had a total sale amount greater than 1000, indicating premium purchases.
-    Sales Trends: Monthly analysis shows variations in sales, helping identify peak seasons.
-    Customer Insights: The analysis identifies the top-spending customers and the most popular product categories.
-
-Reports
-
-    Sales Summary: A detailed report summarizing total sales, customer demographics, and category performance.
-    Trend Analysis: Insights into sales trends across different months and shifts.
-    Customer Insights: Reports on top customers and unique customer counts per category.
+From our first query, we can see that the highest amount of robberies occur at 77th Street and the lowest number of robberies occur at West LA.
+From our second query, we can surmise that in Los Angeles, crimes like Arson occur disproportionately against men (47%) when compared to women. Crimes that are sexual in nature, such as Lewd Conduct, occur at a much higher proportion against women (80% for women and 18% for men).
 
 Conclusion
+The objective of this project is to demonstrate technical skills often used by data analysts in SQL, such as partitioning, grouping, ordering, where clauses, and count functions. One aspect of this project that deserves more attention is the cleaning and prepartion of data. While I did some basic cleaning function to prepare the data to be imported into MySQL, it deserves more attention for this project. For example, some fields, such as victim_sex, have a significant amount of missing data. I did not want to omit this data as it could potentially skew the results of my analysis, considering some crimes may be less likely for an officer to properly identify a victim's sex. More attention will be given to the issue of missing data as I continue to work on this project.
 
-This project serves as a comprehensive introduction to SQL for data analysts, covering database setup, data cleaning, exploratory data analysis, and business-driven SQL queries. The findings from this project can help drive business decisions by understanding sales patterns, customer behavior, and product performance.
-How to Use
-
-    Clone the Repository: Clone this project repository from GitHub.
-    Set Up the Database: Run the SQL scripts provided in the database_setup.sql file to create and populate the database.
-    Run the Queries: Use the SQL queries provided in the analysis_queries.sql file to perform your analysis.
-    Explore and Modify: Feel free to modify the queries to explore different aspects of the dataset or answer additional business questions.
-
-Author - Zero Analyst
-
-This project is part of my portfolio, showcasing the SQL skills essential for data analyst roles. If you have any questions, feedback, or would like to collaborate, feel free to get in touch!
-Stay Updated and Join the Community
-
-For more content on SQL, data analysis, and other data-related topics, make sure to follow me on social media and join our community:
-
-    YouTube: Subscribe to my channel for tutorials and insights
-    Instagram: Follow me for daily tips and updates
-    LinkedIn: Connect with me professionally
-    Discord: Join our community to learn and grow together
-
-Thank you for your support, and I look forward to connecting with you!
+Author - Matthew Newell
