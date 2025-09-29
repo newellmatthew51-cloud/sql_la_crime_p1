@@ -67,7 +67,7 @@ SELECT Victim_Sex, Crime,
 	ROUND
 		(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY Crime), 2)
         AS Percentage_of_crime_type 
-        -- Essentiallty dividing Gender_case_count by Total_crime_type_count
+        -- Essentially dividing Gender_case_count by Total_crime_type_count
         -- to achieve desired proportion
 FROM LA_crime
 GROUP BY Victim_Sex, Crime;
