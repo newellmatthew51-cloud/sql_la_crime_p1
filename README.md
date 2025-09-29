@@ -74,10 +74,12 @@ GROUP BY Victim_Sex, Crime;
 ```
 
 Findings
+
 From our first query, we can see that the highest amount of robberies occur at 77th Street and the lowest number of robberies occur at West LA.
 From our second query, we can surmise that in Los Angeles, crimes like Arson occur disproportionately against men (47%) when compared to women. Crimes that are sexual in nature, such as Lewd Conduct, occur at a much higher proportion against women (80% for women and 18% for men).
 
 Conclusion
+
 The objective of this project is to demonstrate technical skills often used by data analysts in SQL, such as partitioning, grouping, ordering, where clauses, and count functions. One aspect of this project that deserves more attention is the cleaning and prepartion of data. While I did some basic cleaning function to prepare the data to be imported into MySQL, it deserves more attention for this project. For example, some fields, such as victim_sex, have a significant amount of missing data. I did not want to omit this data as it could potentially skew the results of my analysis, considering some crimes may be less likely for an officer to properly identify a victim's sex. More attention will be given to the issue of missing data as I continue to work on this project.
 
 Author - Matthew Newell
